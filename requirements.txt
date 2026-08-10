@@ -20,3 +20,7 @@ point-cloud-utils>=0.29,<1.0 # code/tools/evaluate.py 的精确 P2S（BVH）；
                              # 未安装时自动回退为网格顶点近似，评分会偏差
 matplotlib>=3.5,<4.0         # code/tools/plot_loss.py 绘制训练损失曲线
 plotly>=5.0,<7.0             # code/tools/visualize_errors.py 误差可视化
+
+# 注：jittor 会在首次导入时即时编译算子，因此目标机器还需要 g++ 与
+# 与 CUDA 12.4 匹配的 nvcc（Ubuntu 22.04 上 apt install build-essential 即可）。
+# 上述版本区间均已验证可在 Python 3.10 上解析安装。
