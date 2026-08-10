@@ -14,10 +14,38 @@ torch_cluster，**不需要编译任何 CUDA 扩展**。所有原本由 CUDA 扩
 
 ---
 
+## 从这里开始
+
+放好数据后，**只需要跑一个脚本**：
+
+```bash
+pip install -r requirements.txt
+
+bash run_all.sh infer    # 用随包权重直接生成 A 榜提交文件 result.zip（约几十分钟）
+bash run_all.sh train    # 从零训练分类器 + 去噪网络，再推理（约 2.5 天）
+```
+
+`run_all.sh` 内部就是下面这 4 个脚本按顺序执行，**它们是本项目仅有的 4 个入口**，
+其余文件都是被它们 import 的模块或本地分析工具，不需要单独运行：
+
+| 顺序 | 入口脚本 | 作用 |
+|---|---|---|
+| ① | `train_classifier_on_starter.py` | 训练 ScaleNet 噪声强度分类器 |
+| ② | `train_on_starter.py` | 训练 ASDN 去噪主网络（需要 ① 的权重） |
+| ③ | `predict_on_starter.py` | 在测试集上推理，写出 `denoised.npy` |
+| ④ | `check_submission.py` | 打包前自检（点数一致性 / NaN / 数值范围） |
+
+只想复现 A 榜成绩、不想重训的话，跑 `bash run_all.sh infer` 即可 —— 随包提供了
+A 榜最优权重 `experiments/asdn/asdn-epoch039.pkl`。
+分步执行的完整命令见下方「完整复现流程」。
+
+---
+
 ## 目录结构
 
 ```
 code/
+├── run_all.sh                       # ★ 一键复现入口（infer / train 两种模式）
 ├── train_classifier_on_starter.py   # ① 训练 ScaleNet 噪声强度分类器
 ├── train_on_starter.py              # ② 训练 ASDN 去噪主网络
 ├── predict_on_starter.py            # ③ 在测试集上推理，产出 denoised.npy

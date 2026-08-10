@@ -162,7 +162,7 @@ ASDN 的核心思想是<b>让网络提前决定该在第几层停止去噪</b>�
           缓解了"少数噪点主导梯度"的问题。</td></tr>
   <tr><td>多轮迭代去噪</td>
       <td>把整套 patch 化去噪重复 <code>niters</code> 次。本地消融显示 <b>niters=2 最优</b>；
-          niters=3 因过度平滑反而下降（见 5.4）。</td></tr>
+          niters=3 因过度平滑反而下降（见 5.5）。</td></tr>
   <tr><td>无 GT 本地验证</td>
       <td>测试集没有 GT，为避免把每日提交次数消耗在盲猜上，我们用 <code>tools/make_eval_set.py</code>
           <b>从训练集</b>另建了一个 30 样本的带 GT 验证集，并用 <code>tools/evaluate.py</code> 复现赛题评分公式，
@@ -172,8 +172,18 @@ ASDN 的核心思想是<b>让网络提前决定该在第几层停止去噪</b>�
 <h2>三、代码结构说明</h2>
 
 <h3>3.1 复现主链路（<code>code/</code> 根目录）</h3>
+<div class="note">
+<b>只想快速复现的话，看这一行就够了：</b><code>bash run_all.sh infer</code>（用随包权重直接生成
+提交文件）或 <code>bash run_all.sh train</code>（从零训练后再推理）。
+本项目<b>只有 4 个入口脚本</b>，即下表的 ①②③④，其余文件都是被它们 import 的模块或
+<code>tools/</code> 下的本地分析工具，无需单独运行。
+</div>
 <table>
   <tr><th style="width:52mm">文件</th><th>功能</th></tr>
+  <tr><td><code>run_all.sh</code></td>
+      <td><b>一键复现入口。</b><code>infer</code> 模式按 A 榜最优配置直接推理并打包；
+          <code>train</code> 模式先跑完 ①②，再跑 ③④。脚本会检查数据布局，
+          并在 <code>datalist/</code> 缺失时自动调用 <code>make_datalist.py</code> 重建。</td></tr>
   <tr><td><code>train_classifier_on_starter.py</code></td>
       <td>① 训练 ScaleNet 噪声强度分类器。构造 <code>Classify</code>，用
           <code>get_supervised_loss_nn</code>（预测熵比 vs 真实熵比的 MSE，sum 归约）+ Adam 优化，
@@ -249,7 +259,7 @@ ASDN 的核心思想是<b>让网络提前决定该在第几层停止去噪</b>�
   <tr><td><code>tools/visualize_errors.py</code>、<code>tools/plot_loss.py</code></td>
       <td>误差着色的交互式可视化（Plotly HTML）与训练损失曲线。</td></tr>
   <tr><td><code>tools/results/*.csv</code></td>
-      <td>上述工具产出的记录，含 niters=1/2/3 的逐样本得分，即 5.4 节消融结论的原始数据。</td></tr>
+      <td>上述工具产出的记录，含 niters=1/2/3 的逐样本得分，即 5.5 节消融结论的原始数据。</td></tr>
 </table>
 <p class="small">注：<code>tools/</code> 下的脚本只用于本地验证与分析，<b>不参与 A 榜结果的生成</b>；
 A 榜结果完全由 3.1 节的 ①②③ 三个脚本产生。</p>
@@ -293,7 +303,18 @@ python make_datalist.py --root ./dataset_test_noisy \
     --marker noisy.npy --out ./datalist/test.txt</code></pre>
 <p class="small">以下所有命令均在 <code>code/</code> 目录下执行，数据目录与 <code>code/</code> 同级或以软链接放入 <code>code/</code> 均可。</p>
 
-<h3>5.2 从零训练（完整复现）</h3>
+<h3>5.2 一键复现（推荐）</h3>
+<p>下面 5.3 / 5.4 的所有命令都已封装进 <code>run_all.sh</code>，评委只需要执行其中一行：</p>
+<pre><code># 仅推理：用随包提供的 A 榜最优权重直接生成 result.zip（约几十分钟）
+bash run_all.sh infer
+
+# 完整复现：从零训练分类器 + 去噪网络，再推理打包（约 2.5 天）
+bash run_all.sh train</code></pre>
+<p>脚本会先检查数据布局、必要时重建 <code>datalist/</code>，然后依次执行训练（train 模式）、
+推理、自检、打包，最后在 <code>code/</code> 下产出 <code>result.zip</code>。
+若希望分步执行或调整参数，见下面 5.3 / 5.4。</p>
+
+<h3>5.3 分步执行：从零训练</h3>
 <pre><code># ① 训练 ScaleNet 噪声强度分类器（仅用赛方训练数据）
 python train_classifier_on_starter.py \
     --data_root ./dataset_train \
@@ -312,7 +333,7 @@ python train_on_starter.py \
 训练日志写入 <code>experiments/asdn/train_log.csv</code>，可用
 <code>python tools/plot_loss.py experiments/asdn/train_log.csv</code> 绘制损失曲线。</p>
 
-<h3>5.3 推理并生成 A 榜提交文件</h3>
+<h3>5.4 推理并生成 A 榜提交文件</h3>
 <pre><code># ③ 推理（A 榜最优配置）
 python predict_on_starter.py \
     --ckpt      experiments/asdn/{{BEST_CKPT}} \
@@ -341,7 +362,7 @@ cd results/dataset_test_noisy && zip -r ../../result.zip shapenet/</code></pre>
       <td>提交文件，根目录下即为 <code>shapenet/</code></td></tr>
 </table>
 
-<h3>5.4 关键超参数</h3>
+<h3>5.5 关键超参数</h3>
 <table>
   <tr><th style="width:34mm">参数</th><th style="width:20mm">取值</th><th>含义</th></tr>
   <tr><td><code>--num_samples</code></td><td>32768</td><td>训练时从每个网格表面采样的点数</td></tr>
@@ -376,7 +397,7 @@ cd results/dataset_test_noisy && zip -r ../../result.zip shapenet/</code></pre>
 也没有接触测试集 GT。
 </div>
 
-<h3>5.5 本地评测（可选，不接触测试集 GT）</h3>
+<h3>5.6 本地评测（可选，不接触测试集 GT）</h3>
 <pre><code>python tools/make_eval_set.py --root ./dataset_train --datalist ./datalist/train.txt \
     --num_eval 30 --num_points 50000 --noise_min 0.005 --noise_max 0.02 \
     --out_gt ./eval_gt --out_noisy ./eval_noisy --out_mesh ./eval_mesh_normalized --seed 2024

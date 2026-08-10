@@ -131,7 +131,7 @@ def render_pdf(out_pdf, meta):
     cd, p2s = str(meta['score_cd']).strip(), str(meta['score_p2s']).strip()
     if cd in ('', '-', '—', 'N/A') or p2s in ('', '-', '—', 'N/A'):
         breakdown = ('官方榜单仅公布总分，未公布 CD / P2S 分项'
-                     '（本地验证集上的分项见 5.4 节）')
+                     '（本地验证集上的分项见 5.5 节）')
     else:
         breakdown = f'CD {cd} ／ P2S {p2s}'
 
