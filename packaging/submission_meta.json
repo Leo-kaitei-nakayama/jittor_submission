@@ -11,9 +11,9 @@
   "score_p2s": "-",
   "submit_date": "2026-07-30",
 
-  "contact_name": "TODO_联系人姓名",
-  "contact_wechat": "TODO_微信号",
-  "contact_phone": "TODO_手机号",
+  "contact_name": "张凯程",
+  "contact_wechat": "Nakayama200509",
+  "contact_phone": "18810918215",
 
   "best_ckpt": "asdn-epoch039.pkl",
   "best_niters": "2",
