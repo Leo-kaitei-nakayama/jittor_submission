@@ -18,18 +18,22 @@
 
   最终得分 = 0.5 × mean(cd_score) + 0.5 × mean(p2s_score)
 
+本脚本只用于**本地验证集**打分。该验证集由 tools/make_eval_set.py 从**训练集**
+重新采样加噪构造（eval_gt / eval_noisy / eval_mesh_normalized），带有我们自己生成的 GT。
+赛题测试集不提供 GT，本项目也没有任何读取测试集 GT 的代码路径。
+
 Usage:
     python tools/evaluate.py \\
-        --pred_dir ./results \\
-        --gt_dir ./test_gt \\
-        --noisy_dir ./test_noisy \\
-        --mesh_dir ./dataset_clean \\
+        --pred_dir ./eval_predict \\
+        --gt_dir ./eval_gt \\
+        --noisy_dir ./eval_noisy \\
+        --mesh_dir ./eval_mesh_normalized \\
         [--verbose]
 
 目录结构：
-    pred_dir/  <category>/<model_id>/denoised.xyz
-    gt_dir/    <category>/<model_id>/clean.xyz
-    noisy_dir/ <category>/<model_id>/noisy.xyz
+    pred_dir/  <category>/<model_id>/denoised.npy
+    gt_dir/    <category>/<model_id>/clean.npy      (由 make_eval_set.py 从训练网格采样得到)
+    noisy_dir/ <category>/<model_id>/noisy.npy
     mesh_dir/  <category>/<model_id>/models/model_normalized.obj  (可选，用于P2S)
 """
 
