@@ -1,0 +1,12 @@
+datasets/
+dataset_train/
+dataset_test_noisy/
+eval_gt/
+eval_noisy/
+eval_mesh_normalized/
+eval_predict*/
+results/
+pretrained/
+*.zip
+__pycache__/
+*.pyc
