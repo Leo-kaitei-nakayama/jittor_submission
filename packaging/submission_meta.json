@@ -1,0 +1,22 @@
+{
+  "_comment": "填写队伍信息后运行: python packaging/build_submission.py。所有 TODO 项必须替换，否则脚本会报错退出。",
+
+  "track": "2",
+  "team_name": "TODO_队伍名称",
+  "rank": "TODO_名次三位数字_例如001",
+
+  "score_total": "TODO_A榜最优总分",
+  "score_cd": "TODO_A榜CD得分_没有可填 -",
+  "score_p2s": "TODO_A榜P2S得分_没有可填 -",
+  "submit_date": "TODO_A榜最优成绩提交日期_例如2026-07-30",
+
+  "contact_name": "TODO_联系人姓名",
+  "contact_wechat": "TODO_微信号",
+  "contact_phone": "TODO_手机号",
+
+  "best_ckpt": "asdn-epoch039.pkl",
+  "best_niters": "2",
+  "classify_ckpt": "classify-epoch049.pkl",
+
+  "include_all_checkpoints": false
+}

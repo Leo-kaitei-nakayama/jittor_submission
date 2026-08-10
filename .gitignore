@@ -10,3 +10,4 @@ pretrained/
 *.zip
 __pycache__/
 *.pyc
+dist/

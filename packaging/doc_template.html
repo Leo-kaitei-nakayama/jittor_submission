@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>第六届计图挑战赛 赛题{{TRACK_CN}} 提交说明文档</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 18mm 18mm 18mm;
+    @bottom-center {
+      content: counter(page) " / " counter(pages);
+      font-family: "WenQuanYi Zen Hei";
+      font-size: 8pt;
+      color: #888;
+    }
+  }
+  body {
+    font-family: "WenQuanYi Zen Hei", sans-serif;
+    font-size: 10pt;
+    line-height: 1.65;
+    color: #1a1a1a;
+  }
+  h1 {
+    font-size: 19pt;
+    margin: 0 0 2mm 0;
+    color: #0d2b45;
+  }
+  .subtitle { color: #55697d; font-size: 10.5pt; margin: 0 0 6mm 0; }
+  h2 {
+    font-size: 13pt;
+    color: #0d2b45;
+    border-bottom: 1.4pt solid #0d2b45;
+    padding-bottom: 1.5mm;
+    margin: 8mm 0 3mm 0;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 11pt;
+    color: #14507a;
+    margin: 5mm 0 1.5mm 0;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 2.5mm 0; text-align: justify; }
+  ul, ol { margin: 0 0 3mm 0; padding-left: 6mm; }
+  li { margin-bottom: 1.2mm; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 2mm 0 4mm 0;
+    font-size: 9pt;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 0.6pt solid #b8c4d0;
+    padding: 1.6mm 2.2mm;
+    vertical-align: top;
+    text-align: left;
+  }
+  th { background: #eaf0f6; color: #0d2b45; font-weight: bold; }
+  td.k { background: #f6f9fc; white-space: nowrap; width: 32mm; }
+  code {
+    font-family: "WenQuanYi Zen Hei Mono", monospace;
+    font-size: 8.6pt;
+    background: #f1f4f7;
+    padding: 0 0.8mm;
+    border-radius: 1pt;
+  }
+  pre {
+    font-family: "WenQuanYi Zen Hei Mono", monospace;
+    font-size: 8.3pt;
+    line-height: 1.45;
+    background: #f6f8fa;
+    border: 0.5pt solid #d8e0e8;
+    border-left: 2pt solid #14507a;
+    padding: 2.2mm 3mm;
+    margin: 2mm 0 3.5mm 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    page-break-inside: avoid;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  .note {
+    background: #fdf6e3;
+    border-left: 2pt solid #c8a233;
+    padding: 2mm 3mm;
+    margin: 2mm 0 3.5mm 0;
+    font-size: 9pt;
+    page-break-inside: avoid;
+  }
+  .kv { width: 100%; border-collapse: collapse; }
+  .hl { color: #a6371c; font-weight: bold; }
+  .small { font-size: 8.5pt; color: #667; }
+</style>
+</head>
+<body>
+
+<h1>第六届计图挑战赛 · 赛题{{TRACK_CN}}（点云降噪）</h1>
+<p class="subtitle">A 榜提交说明文档 &nbsp;|&nbsp; 队伍：{{TEAM_NAME}} &nbsp;|&nbsp; 文档生成日期：{{BUILD_DATE}}</p>
+
+<h2>一、团队信息</h2>
+<table class="kv">
+  <tr><td class="k">团队名称</td><td>{{TEAM_NAME}}</td>
+      <td class="k">赛道</td><td>赛题{{TRACK_CN}}（点云降噪）</td></tr>
+  <tr><td class="k">A 榜排名</td><td>第 {{RANK_PLAIN}} 名</td>
+      <td class="k">最优成绩提交日期</td><td>{{SUBMIT_DATE}}</td></tr>
+  <tr><td class="k">A 榜最优总分</td><td class="hl">{{SCORE_TOTAL}}</td>
+      <td class="k">分项得分</td><td>CD {{SCORE_CD}} ／ P2S {{SCORE_P2S}}</td></tr>
+  <tr><td class="k">联系人</td><td>{{CONTACT_NAME}}</td>
+      <td class="k">微信</td><td>{{CONTACT_WECHAT}}</td></tr>
+  <tr><td class="k">电话</td><td>{{CONTACT_PHONE}}</td>
+      <td class="k">最优结果对应权重</td><td><code>{{BEST_CKPT}}</code>，<code>--niters {{BEST_NITERS}}</code></td></tr>
+</table>
+
+<h2>二、项目概述</h2>
+
+<h3>2.1 核心任务</h3>
+<p>输入 ShapeNet 物体的含噪点云 <code>noisy.npy</code>（形状 <code>(N,3)</code>），输出去噪后的点云
+<code>denoised.npy</code>（形状必须仍为 <code>(N,3)</code>，与输入点数严格一致）。评测按百分制：</p>
+<pre><code>cd_score  = clamp(100 × (1 − CD_pred  / CD_noisy ), 0, 100)
+p2s_score = clamp(100 × (1 − P2S_pred / P2S_noisy), 0, 100)
+最终得分  = 0.5 × mean(cd_score) + 0.5 × mean(p2s_score)</code></pre>
+<p>即模型必须同时把点云拉回真实表面（P2S）并保持整体分布不塌陷（CD）。</p>
+
+<h3>2.2 解决思路与模型选型</h3>
+<p>我们选用 ASDN（<i>"You Should Learn to Stop Denoising on Point Clouds in Advance"</i>）作为基础方法，
+并将其<span class="hl">完整移植到 Jittor</span>。选它的理由是：点云各处的噪声强度并不均匀，
+平坦区域轻噪、细节区域重噪，用统一深度的网络去噪必然在"欠平滑"和"过平滑"之间二选一。
+ASDN 的核心思想是<b>让网络提前决定该在第几层停止去噪</b>——先估计局部噪声强度，
+再据此自适应地决定编解码器展开的层数。这正好对应本赛题的评分结构：
+过度平滑会破坏 CD，欠平滑会拖累 P2S。</p>
+
+<p>整体流程分三步：</p>
+<ol>
+  <li><b>噪声强度估计（ScaleNet）</b>：DGCNN 风格的 4 层 EdgeConv 网络，全局池化后回归一个标量
+      ρ —— 含噪 patch 与干净 patch 的<b>体素密度熵之比</b>。熵比越大表示噪声越重。</li>
+  <li><b>自适应深度去噪（FeatureExtraction）</b>：由 ρ 计算展开层数
+      <code>n = ceil(L − (L−1)·log(γ·ρ + 1))</code>（L=4，γ=0.396），得到 2 / 3 / 4 三档。
+      同一个 batch 内不同 patch 走不同深度：深度不足的 patch 在第 3、第 4 个编码块处提前退出，
+      解码端对称地只走对应层数，最后由 3 层 MLP + <code>tanh</code> 输出<b>每点位移场 Δp</b>。</li>
+  <li><b>Patch 化推理与拼接</b>：整云过大无法一次前向，按 FPS 种子切成 1000 点的 patch 分别去噪，
+      再按权重把每个原始点的坐标从"覆盖它最好的那个 patch"取回。</li>
+</ol>
+
+<h3>2.3 算法要点与我们的改动</h3>
+<table>
+  <tr><th style="width:34mm">要点</th><th>说明</th></tr>
+  <tr><td>全 Jittor 实现</td>
+      <td>原实现依赖 PyTorch-Lightning、pytorch3d、torch_geometric、torch_cluster，以及两个需要编译的
+          CUDA 扩展（<code>pointops</code>、<code>Chamfer3D</code>）。本项目把这些全部用纯 Jittor 张量运算重写
+          （<code>models/pointops_jt.py</code>、<code>models/InfoCD.py</code>、<code>models/dynamic_edge_conv.py</code>），
+          <b>无需任何编译步骤，也不安装 PyTorch</b>。</td></tr>
+  <tr><td>ScaleNet 合规重训</td>
+      <td>原论文提供的 <code>classify.ckpt</code> 是在其自有数据集上训练的，属于外部预训练权重。
+          为满足赛题"不得使用外部数据"的规定，我们用 <code>train_classifier_on_starter.py</code>
+          在<b>赛方训练集上从零重训</b> ScaleNet；<code>models/feature.py</code> 中不存在任何加载外部权重的代码路径。</td></tr>
+  <tr><td>训练数据分布对齐</td>
+      <td><code>bridge/data_bridge.py</code> 严格复刻测试集的生成方式：网格表面均匀采样 32768 点 →
+          归一化到单位球 → 叠加拉普拉斯噪声（σ 在 [0.005, 0.02] 均匀采样）→ 以随机种子点 KNN 取 1000 点 patch。
+          训练时额外加入随机旋转与随机缩放增强。</td></tr>
+  <tr><td>InfoCD 损失</td>
+      <td>在双向 Chamfer 最近邻距离上做 InfoNCE 式对数归一化，相比朴素 CD 对离群点更稳健，
+          缓解了"少数噪点主导梯度"的问题。</td></tr>
+  <tr><td>多轮迭代去噪</td>
+      <td>把整套 patch 化去噪重复 <code>niters</code> 次。本地消融显示 <b>niters=2 最优</b>；
+          niters=3 因过度平滑反而下降（见 5.4）。</td></tr>
+  <tr><td>无 GT 本地验证</td>
+      <td>测试集没有 GT，为避免把每日提交次数消耗在盲猜上，我们用 <code>tools/make_eval_set.py</code>
+          <b>从训练集</b>另建了一个 30 样本的带 GT 验证集，并用 <code>tools/evaluate.py</code> 复现赛题评分公式，
+          所有超参决策都在这个集合上完成。</td></tr>
+</table>
+
+<h2>三、代码结构说明</h2>
+
+<h3>3.1 复现主链路（<code>code/</code> 根目录）</h3>
+<table>
+  <tr><th style="width:52mm">文件</th><th>功能</th></tr>
+  <tr><td><code>train_classifier_on_starter.py</code></td>
+      <td>① 训练 ScaleNet 噪声强度分类器。构造 <code>Classify</code>，用
+          <code>get_supervised_loss_nn</code>（预测熵比 vs 真实熵比的 MSE，sum 归约）+ Adam 优化，
+          每 5 个 epoch 存一个 <code>experiments/classify/classify-epochXXX.pkl</code>。</td></tr>
+  <tr><td><code>train_on_starter.py</code></td>
+      <td>② 训练 ASDN 去噪主网络。构造 <code>DenoiseNetCD</code>（内部按 <code>--classify_ckpt</code> 载入
+          第 ① 步的 ScaleNet），按 InfoCD 损失训练，逐 epoch 把平均损失写入
+          <code>experiments/asdn/train_log.csv</code>，每 5 个 epoch 存一次权重。
+          脚本按 <code>jt.rank</code> 做了主进程判断，可直接用 <code>mpirun</code> 多卡运行。</td></tr>
+  <tr><td><code>predict_on_starter.py</code></td>
+      <td>③ 推理并写出赛题提交格式。逐样本读 <code>noisy.npy</code> → 归一化到单位球（记录 center/scale）→
+          调用 <code>patch_based_denoise</code> 迭代 <code>--niters</code> 次 →
+          <span class="hl">反归一化回原坐标系</span> → 存
+          <code>&lt;out_root&gt;/shapenet/&lt;synset&gt;/&lt;model_id&gt;/denoised.npy</code>（float32）。</td></tr>
+  <tr><td><code>check_submission.py</code></td>
+      <td>④ 打包前自检：逐条核对预测文件是否存在、<b>点数与 noisy.npy 是否一致</b>、有无 NaN/Inf、
+          坐标量级是否异常。前两项曾是导致提交得 0 分的直接原因，务必在打包前运行。</td></tr>
+  <tr><td><code>make_datalist.py</code></td>
+      <td>扫描数据目录重建 <code>datalist/*.txt</code>（官方 starter code 亦自带该目录）。</td></tr>
+</table>
+
+<h3>3.2 模型定义（<code>code/models/</code>）</h3>
+<table>
+  <tr><th style="width:44mm">文件</th><th>关键内容</th></tr>
+  <tr><td><code>denoiseCD.py</code></td>
+      <td><code>DenoiseNetCD</code>。<code>get_supervised_loss</code>：patch 减去种子坐标后前向得位移场，
+          与干净 patch 算 InfoCD。<code>patch_based_denoise</code>：FPS 取
+          <code>seed_k·N/patch_size</code> 个种子 → KNN 取 patch → 分批前向 →
+          按 <code>exp(−归一化距离)</code> 的最大权重决定每个原始点归属哪个 patch，完成拼接。</td></tr>
+  <tr><td><code>feature.py</code></td>
+      <td><code>FeatureExtraction</code>：编码器 = <code>StartBlock</code> + 4×<code>Downsampling</code>，
+          解码器 = 4×<code>Upsampling</code>。前向时先用 ScaleNet 得到每个 patch 的 ρ，
+          换算成 2/3/4 档层数，把同档的 patch 分组后按组提前退出／继续下探，最后 3 层 MLP + tanh 输出位移。</td></tr>
+  <tr><td><code>blocks.py</code></td>
+      <td><code>Downsampling</code> = MRE（两级 RFE 局部注意力聚合，16 邻居）+ FPS 下采样；
+          <code>Upsampling</code> = 反距离加权插值（k=8）+ 交叉注意力 Point Transformer 层（16 邻居）+
+          与编码器同层特征跳连的 MLP。</td></tr>
+  <tr><td><code>classifyNet.py</code></td>
+      <td><code>ScaleNet</code>：4 层 <code>DynamicEdgeConv</code>（3→16→24→72，拼接 112→256），
+          全局平均池化 + 3 层 MLP + tanh。<code>get_edge_index</code> 取 k+1 近邻并丢弃第 0 个（自身）实现自环剔除。</td></tr>
+  <tr><td><code>classify.py</code></td>
+      <td><code>Classify</code>：封装 ScaleNet，提供熵比回归的监督损失。</td></tr>
+  <tr><td><code>dynamic_edge_conv.py</code></td>
+      <td>EdgeConv：<code>out_i = MLP_lin(x_i) + max_j MLP([x_i, x_j − x_i])</code>。
+          用稠密 <code>(B,N,k,C)</code> 邻居张量 + <code>jt.max</code> 实现，替代 torch_geometric 的稀疏消息传递。</td></tr>
+  <tr><td><code>InfoCD.py</code></td>
+      <td><code>chamfer_dist</code>（纯 Jittor，返回值与 Chamfer3D 扩展一致）与 <code>calc_cd_like_InfoV2</code>。</td></tr>
+  <tr><td><code>pointops_jt.py</code></td>
+      <td>纯 Jittor 的 <code>furthestsampling</code> / <code>queryandgroup</code> / <code>interpolation</code>
+          （保持原 CUDA 扩展的 offset 格式 API）以及 <code>knn_points</code> / <code>farthest_point_sampling</code>。
+          均为精确暴力实现，行为与原算子等价。</td></tr>
+  <tr><td><code>utils.py</code></td>
+      <td><code>get_entropy_B</code>：体素密度熵（动态体素尺寸、唯一体素计数、10 桶直方图），
+          用于构造 ScaleNet 的监督目标。</td></tr>
+</table>
+
+<h3>3.3 数据处理（<code>code/bridge/</code>）与工具（<code>code/tools/</code>）</h3>
+<table>
+  <tr><th style="width:44mm">文件</th><th>功能</th></tr>
+  <tr><td><code>bridge/data_bridge.py</code></td>
+      <td><code>ShapeNetPatchTrainDataset</code>：每次 <code>__getitem__</code> 产出一组
+          (含噪 patch, 干净 patch, 种子点, 噪声 σ)，即训练损失所需的全部输入。
+          <code>ShapeNetNoisyPredictDataset</code>：推理时产出整片含噪点云及其相对路径。
+          两者均继承 <code>jittor.dataset.Dataset</code>（数据集自带批处理）。</td></tr>
+  <tr><td><code>tools/evaluate.py</code></td>
+      <td>按赛题公式计算 CD / P2S 与总分；P2S 优先用 point-cloud-utils 的 BVH 精确求解。</td></tr>
+  <tr><td><code>tools/make_eval_set.py</code></td>
+      <td>从<b>训练集</b>构造带 GT 的本地验证集（clean / noisy / 同变换归一化后的网格三件套）。</td></tr>
+  <tr><td><code>tools/analysis.py</code></td>
+      <td>逐样本得分统计：按类别、按噪声档分组，列出最好／最差样本。</td></tr>
+  <tr><td><code>tools/estimate_noise.py</code></td>
+      <td>无 GT 的噪声强度估计（局部 PCA 平面拟合残差 RMS），用于验证"噪声自适应"的可行性。</td></tr>
+  <tr><td><code>tools/visualize_errors.py</code>、<code>tools/plot_loss.py</code></td>
+      <td>误差着色的交互式可视化（Plotly HTML）与训练损失曲线。</td></tr>
+  <tr><td><code>tools/results/*.csv</code></td>
+      <td>上述工具产出的记录，含 niters=1/2/3 的逐样本得分，即 5.4 节消融结论的原始数据。</td></tr>
+</table>
+<p class="small">注：<code>tools/</code> 下的脚本只用于本地验证与分析，<b>不参与 A 榜结果的生成</b>；
+A 榜结果完全由 3.1 节的 ①②③ 三个脚本产生。</p>
+
+<h2>四、环境配置步骤</h2>
+<table>
+  <tr><td class="k">操作系统</td><td>Ubuntu 22.04</td></tr>
+  <tr><td class="k">GPU / 驱动</td><td>NVIDIA RTX 4090，CUDA 12.4</td></tr>
+  <tr><td class="k">Python</td><td>3.10（开发时实际使用 3.9，代码未使用任何版本相关语法，两者均可）</td></tr>
+  <tr><td class="k">深度学习框架</td><td>Jittor 1.3.11.0（<code>requirements.txt</code> 约束为 <code>&gt;=1.3.10,&lt;1.4</code>）</td></tr>
+  <tr><td class="k">PyTorch</td><td><b>不需要</b>。本项目无任何 torch 依赖。</td></tr>
+</table>
+
+<pre><code>conda create -n jittor_asdn python=3.10 -y
+conda activate jittor_asdn
+
+# 解压提交包后，在包根目录执行
+pip install -r requirements.txt
+
+# 验证 Jittor 能正常使用 GPU
+python -c "import jittor as jt; jt.flags.use_cuda=1; print(jt.rand(3,3).sum())"</code></pre>
+
+<div class="note">
+<b>关于 JittorGeometric：</b>本项目<b>不依赖</b> JittorGeometric。原实现中唯一用到
+torch_geometric 的部分是 EdgeConv，已在 <code>models/dynamic_edge_conv.py</code> 中
+用稠密邻居张量 + <code>jt.max</code> 重写（对本代码构建的规则 KNN 图，两者数学等价），
+因此无需安装任何图学习扩展库。
+</div>
+
+<h2>五、运行步骤</h2>
+
+<h3>5.1 数据准备</h3>
+<pre><code>&lt;工作目录&gt;/
+├── dataset_train/shapenet/&lt;synset&gt;/&lt;model_id&gt;/models/model_normalized.obj
+├── dataset_test_noisy/shapenet/&lt;synset&gt;/&lt;model_id&gt;/noisy.npy
+└── datalist/{train.txt, test.txt}      # 每行一个 "shapenet/&lt;synset&gt;/&lt;model_id&gt;"</code></pre>
+<p><code>datalist/</code> 随官方 starter code 提供；若缺失，可从数据目录重建：</p>
+<pre><code>python make_datalist.py --root ./dataset_train \
+    --marker models/model_normalized.obj --out ./datalist/train.txt
+python make_datalist.py --root ./dataset_test_noisy \
+    --marker noisy.npy --out ./datalist/test.txt</code></pre>
+<p class="small">以下所有命令均在 <code>code/</code> 目录下执行，数据目录与 <code>code/</code> 同级或以软链接放入 <code>code/</code> 均可。</p>
+
+<h3>5.2 从零训练（完整复现）</h3>
+<pre><code># ① 训练 ScaleNet 噪声强度分类器（仅用赛方训练数据）
+python train_classifier_on_starter.py \
+    --data_root ./dataset_train \
+    --datalist  ./datalist/train.txt \
+    --epochs 50 --batch_size 8 --lr 5e-4 \
+    --save_dir experiments/classify
+
+# ② 训练 ASDN 去噪主网络
+python train_on_starter.py \
+    --data_root ./dataset_train \
+    --datalist  ./datalist/train.txt \
+    --classify_ckpt experiments/classify/{{CLASSIFY_CKPT}} \
+    --epochs 80 --batch_size 8 --lr 5e-4 \
+    --save_dir experiments/asdn</code></pre>
+<p>参考耗时：去噪主网络约 45 分钟/epoch，80 epoch 合计约 2.5 天（单卡 4090）。
+训练日志写入 <code>experiments/asdn/train_log.csv</code>，可用
+<code>python tools/plot_loss.py experiments/asdn/train_log.csv</code> 绘制损失曲线。</p>
+
+<h3>5.3 推理并生成 A 榜提交文件</h3>
+<pre><code># ③ 推理（A 榜最优配置）
+python predict_on_starter.py \
+    --ckpt      experiments/asdn/{{BEST_CKPT}} \
+    --data_root ./dataset_test_noisy \
+    --datalist  ./datalist/test.txt \
+    --niters {{BEST_NITERS}} --patch_size 1000 --seed_k 6 --seed_k_alpha 10 \
+    --out_root  ./results/dataset_test_noisy
+
+# ④ 打包前自检：点数一致性 / NaN / 数值范围
+python check_submission.py \
+    --datalist   ./datalist/test.txt \
+    --pred_root  ./results/dataset_test_noisy \
+    --noisy_root ./dataset_test_noisy
+
+# ⑤ 打包为 A 榜提交格式
+cd results/dataset_test_noisy && zip -r ../../result.zip shapenet/</code></pre>
+
+<p><b>输入输出路径：</b></p>
+<table>
+  <tr><th style="width:56mm">路径</th><th>内容</th></tr>
+  <tr><td><code>dataset_test_noisy/shapenet/&lt;synset&gt;/&lt;model_id&gt;/noisy.npy</code></td>
+      <td>输入：含噪点云 <code>(N,3)</code></td></tr>
+  <tr><td><code>results/dataset_test_noisy/shapenet/&lt;synset&gt;/&lt;model_id&gt;/denoised.npy</code></td>
+      <td>输出：去噪点云 <code>(N,3)</code> float32，点数与输入一致</td></tr>
+  <tr><td><code>result.zip</code></td>
+      <td>提交文件，根目录下即为 <code>shapenet/</code></td></tr>
+</table>
+
+<h3>5.4 关键超参数</h3>
+<table>
+  <tr><th style="width:34mm">参数</th><th style="width:20mm">取值</th><th>含义</th></tr>
+  <tr><td><code>--num_samples</code></td><td>32768</td><td>训练时从每个网格表面采样的点数</td></tr>
+  <tr><td><code>--patch_size</code></td><td>1000</td><td>每个 patch 的点数；训练与推理必须一致</td></tr>
+  <tr><td><code>--noise_min / --noise_max</code></td><td>0.005 / 0.02</td>
+      <td>训练加噪的拉普拉斯尺度范围（单位球坐标系下），对齐测试集噪声分布</td></tr>
+  <tr><td><code>--batch_size</code></td><td>8</td><td>每步的 patch 数（单卡 4090 显存下的上限附近）</td></tr>
+  <tr><td><code>--lr</code></td><td>5e-4</td><td>Adam 学习率，全程恒定</td></tr>
+  <tr><td><code>--epochs</code></td><td>50 / 80</td><td>分类器 / 去噪网络的训练轮数</td></tr>
+  <tr><td><code>--frame_knn</code></td><td>32</td><td>ScaleNet 构图时的近邻数</td></tr>
+  <tr><td><code>--seed_k</code></td><td>6</td><td>推理时种子点数量系数：<code>num_patches = seed_k·N/patch_size</code>，
+      &gt;1 使 patch 相互重叠，为拼接提供冗余</td></tr>
+  <tr><td><code>--seed_k_alpha</code></td><td>10</td><td>控制单批前向的 patch 数（显存不足时调大）</td></tr>
+  <tr><td class="hl"><code>--niters</code></td><td class="hl">{{BEST_NITERS}}</td>
+      <td>整套 patch 化去噪的迭代轮数，<b>对分数影响最大的单一超参</b></td></tr>
+  <tr><td><code>--seed</code></td><td>2024</td><td>随机种子（<code>jt.set_global_seed</code> + <code>np.random.seed</code>）</td></tr>
+</table>
+
+<p><b><code>--niters</code> 消融</b>（本地 30 样本验证集，原始数据见 <code>tools/results/per_sample_scores*.csv</code>）：</p>
+<table>
+  <tr><th>niters</th><th>CD 得分</th><th>P2S 得分</th><th>总分</th><th>说明</th></tr>
+  <tr><td>1</td><td>60.12</td><td>81.94</td><td>71.03</td><td>去噪不充分</td></tr>
+  <tr><td><b>2</b></td><td><b>66.47</b></td><td><b>87.02</b></td><td><b>76.74</b></td><td><b>A 榜采用</b></td></tr>
+  <tr><td>3</td><td>63.39</td><td>85.71</td><td>74.55</td><td>过度平滑，CD 明显回落</td></tr>
+</table>
+
+<h3>5.5 本地评测（可选，不接触测试集 GT）</h3>
+<pre><code>python tools/make_eval_set.py --root ./dataset_train --datalist ./datalist/train.txt \
+    --num_eval 30 --num_points 50000 --noise_min 0.005 --noise_max 0.02 \
+    --out_gt ./eval_gt --out_noisy ./eval_noisy --out_mesh ./eval_mesh_normalized --seed 2024
+
+python make_datalist.py --root ./eval_noisy --marker noisy.npy --out ./datalist/eval.txt
+
+python predict_on_starter.py --ckpt experiments/asdn/{{BEST_CKPT}} \
+    --data_root ./eval_noisy --datalist ./datalist/eval.txt \
+    --niters {{BEST_NITERS}} --out_root ./eval_predict
+
+python tools/evaluate.py --pred_dir ./eval_predict --gt_dir ./eval_gt \
+    --noisy_dir ./eval_noisy --mesh_dir ./eval_mesh_normalized \
+    --save_csv ./tools/results/per_sample_scores_niters{{BEST_NITERS}}.csv</code></pre>
+
+<h2>六、其他补充</h2>
+
+<h3>6.1 合规性说明</h3>
+<ul>
+  <li><b>未使用测试集标签。</b>测试集不含 GT，代码中也没有任何读取测试集 GT 的路径。
+      <code>predict_on_starter.py</code> 只读 <code>noisy.npy</code>；<code>check_submission.py</code>
+      读 <code>noisy.npy</code> 仅用于核对点数。用于调参的本地验证集完全由
+      <b>训练集</b>重新采样加噪构造（<code>tools/make_eval_set.py</code>），与测试集无交集。</li>
+  <li><b>未使用外部数据或外部预训练权重。</b>ScaleNet 与去噪网络均在赛方提供的 ShapeNet
+      训练集上从零训练。原论文发布的 <code>ASDN.ckpt</code> / <code>classify.ckpt</code>
+      在项目早期曾被下载用于对照，但<b>提交代码中不存在任何加载它们的代码路径</b>——
+      <code>models/feature.py</code> 只会新建 ScaleNet，或加载由
+      <code>train_classifier_on_starter.py</code> 训练出的 Jittor <code>.pkl</code>。</li>
+  <li><b>与 A 榜的一致性。</b>提交代码相对 A 榜跑分时的工作目录，仅删除了从未被调用的死代码
+      （原论文面向 PUNet 数据集的 <code>train_ASDN.py</code> / <code>train_classifier.py</code> /
+      <code>test_ASDN.py</code> 及其专属依赖 <code>utils/</code>；这三个脚本引用了本仓库中并不存在的
+      <code>datasets.pcl</code>、<code>datasets.patch</code>、<code>Evaluate</code> 模块，本就无法运行），
+      并把本地分析脚本归入 <code>tools/</code>。
+      <b>模型定义、超参数、数据处理逻辑均未做任何改动，结果不受影响。</b></li>
+</ul>
+
+<h3>6.2 复现注意事项</h3>
+<ul>
+  <li><b>点数必须一致。</b>评测按 <code>(N,3)</code> 逐样本比对，输出点数与 <code>noisy.npy</code> 不同会直接得 0 分。
+      我们早期的两次提交正是栽在这里，因此加入了 <code>check_submission.py</code>，<b>打包前请务必运行</b>。</li>
+  <li><b>必须反归一化。</b>网络在单位球坐标系下工作，<code>predict_on_starter.py</code> 会用记录的
+      center/scale 把结果还原到原坐标系。若跳过这一步，CD/P2S 同样会归零。</li>
+  <li><b>显存不足时</b>调大 <code>--seed_k_alpha</code>（减小单批 patch 数），或调小 <code>--batch_size</code>。
+      <code>patch_based_denoise</code> 中有断言 <code>patch_step &gt; 0</code>，若触发说明
+      <code>seed_k_alpha</code> 相对点数过大，需调小。</li>
+  <li><b>速度。</b>KNN 与 FPS 是精确暴力实现（无自定义 CUDA kernel），结果正确但比原 CUDA 扩展慢；
+      大点云上的推理耗时以此为主。</li>
+  <li><b>随机性。</b>训练数据每个 epoch 重新采样表面点、重新加噪，随机种子固定为 2024
+      （<code>jt.set_global_seed</code> + <code>np.random.seed</code>）。GPU 上的浮点归约顺序不保证逐位可复现，
+      重训得到的分数可能有小幅波动。</li>
+</ul>
+
+<h3>6.3 已知问题</h3>
+<ul>
+  <li><code>models/classifyNet.py</code> 的自环剔除假设"每个点的最近邻是它自己"，
+      当点云中存在完全重合的点时会误剔除一个真实邻居；实测对结果无可观测影响。</li>
+  <li><code>tools/evaluate.py</code> 在未安装 <code>point-cloud-utils</code> 时会退化为
+      "点到网格顶点"的近似 P2S，绝对数值偏大（相对排序仍然可用）。安装后走 BVH 精确计算。</li>
+  <li>Jittor 与 PyTorch 的 BatchNorm momentum 定义等默认设置略有差异，
+      与原 PyTorch 实现做逐位数值对比时会有小幅漂移。</li>
+</ul>
+
+<h3>6.4 提交包内容</h3>
+<table>
+  <tr><th style="width:52mm">路径</th><th>说明</th></tr>
+  <tr><td><code>code/</code></td><td>与 A 榜一致的完整代码（模型定义、训练、推理、数据处理）</td></tr>
+  <tr><td><code>code/experiments/</code></td><td>{{CKPT_NOTE}}</td></tr>
+  <tr><td><code>requirements.txt</code></td><td>全部 Python 依赖及版本约束</td></tr>
+  <tr><td><code>提交说明文档.pdf</code></td><td>本文档</td></tr>
+</table>
+
+</body>
+</html>

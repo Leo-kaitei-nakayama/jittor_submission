@@ -3,7 +3,7 @@ Pure-Jittor replacements for:
   - pointops.furthestsampling / pointops.queryandgroup / pointops.interpolation
     (originally custom CUDA extensions operating on "offset" (flattened-batch) format)
   - pytorch3d.ops.knn_points
-  - the ratio-based farthest_point_sampling from models/utils.py (torch_cluster.fps)
+  - the ratio-based farthest_point_sampling built on torch_cluster.fps
 
 These are written as exact, brute-force implementations (no custom CUDA kernels),
 so they are slower than the originals but numerically equivalent in behavior.
