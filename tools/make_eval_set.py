@@ -8,7 +8,7 @@ This lets you measure CD/P2S scores locally, without using up your
 2-submissions-per-day limit on the real (GT-less) test set.
 
 Usage:
-    python make_eval_set.py \
+    python tools/make_eval_set.py \
         --root ./dataset_train \
         --datalist ./datalist/train.txt \
         --num_eval 30 \
@@ -27,7 +27,6 @@ Output layout (matches what evaluate.py expects):
 
 import os
 import argparse
-import shutil
 import numpy as np
 import trimesh
 
@@ -63,7 +62,7 @@ def main():
     parser.add_argument('--out_gt', type=str, default='./eval_gt')
     parser.add_argument('--out_noisy', type=str, default='./eval_noisy')
     parser.add_argument('--out_mesh', type=str, default='./eval_mesh_normalized')
-    parser.add_argument('--meta_csv', type=str, default='./eval_meta.csv',
+    parser.add_argument('--meta_csv', type=str, default='./tools/results/eval_meta.csv',
                          help='where to save synset/model_id/noise_std per sample')
     parser.add_argument('--seed', type=int, default=2024)
     args = parser.parse_args()

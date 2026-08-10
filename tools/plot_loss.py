@@ -1,5 +1,5 @@
 
-"""Usage: python plot_loss.py experiments/asdn/train_log.csv"""
+"""Usage: python tools/plot_loss.py experiments/asdn/train_log.csv"""
 import sys
 import pandas as pd
 import matplotlib

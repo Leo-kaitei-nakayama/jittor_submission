@@ -2,7 +2,7 @@
 Analyze per-sample CD/P2S scores from evaluate.py's --save_csv output.
 
 Usage:
-    python analyze.py --csv ./per_sample_scores.csv --worst_k 8
+    python tools/analysis.py --csv ./tools/results/per_sample_scores.csv --worst_k 8
 """
 import argparse
 import pandas as pd
@@ -27,8 +27,8 @@ SYNSET_NAMES = {
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--csv', type=str, default='./per_sample_scores.csv')
-    parser.add_argument('--meta_csv', type=str, default='./eval_meta.csv',
+    parser.add_argument('--csv', type=str, default='./tools/results/per_sample_scores.csv')
+    parser.add_argument('--meta_csv', type=str, default='./tools/results/eval_meta.csv',
                          help='eval_meta.csv from make_eval_set.py (has noise_std per sample); pass "" to skip')
     parser.add_argument('--worst_k', type=int, default=8)
     parser.add_argument('--metric', type=str, default='cd_score',

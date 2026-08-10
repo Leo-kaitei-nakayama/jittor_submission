@@ -19,7 +19,7 @@
   最终得分 = 0.5 × mean(cd_score) + 0.5 × mean(p2s_score)
 
 Usage:
-    python evaluate.py \\
+    python tools/evaluate.py \\
         --pred_dir ./results \\
         --gt_dir ./test_gt \\
         --noisy_dir ./test_noisy \\
@@ -39,7 +39,6 @@ import os
 import sys
 import time
 from multiprocessing import Pool, cpu_count
-from functools import partial
 
 import warnings
 warnings.filterwarnings('ignore', category=RuntimeWarning, module='point_cloud_utils')

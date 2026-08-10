@@ -26,41 +26,8 @@ class DenoiseNetCD(nn.Module):
             classify_ckpt=classify_ckpt, classify_frame_knn=classify_frame_knn)
 
     # ------------------------------------------------------------------
-    # Checkpoint loading (from the ORIGINAL torch-lightning .ckpt)
-    # ------------------------------------------------------------------
-    @classmethod
-    def load_from_checkpoint(cls, ckpt_path):
-        import torch  # only for deserializing the .ckpt file
-
-        ckpt = torch.load(ckpt_path, map_location='cpu')
-        hparams = ckpt.get('hyper_parameters', {}) or {}
-        args = hparams.get('args', None)
-
-        model = cls(args)
-        state_dict = ckpt['state_dict']
-        jt_state = model.state_dict()
-
-        skipped = []
-        for name, tensor in state_dict.items():
-            if name in jt_state:
-                jt_state[name] = jt.array(tensor.detach().cpu().numpy())
-            else:
-                skipped.append(name)
-        model.load_state_dict(jt_state)
-
-        if skipped:
-            print(f"[DenoiseNetCD.load_from_checkpoint] warning: {len(skipped)} "
-                  f"unmatched tensors skipped (e.g. {skipped[:5]})")
-        model.eval()
-        return model
-
-    # ------------------------------------------------------------------
     # Training loss
     # ------------------------------------------------------------------
-    def curr_iter_add_noise(self, pcl_clean, noise_std):
-        new_pcl_clean = pcl_clean + jt.randn_like(pcl_clean) * noise_std.unsqueeze(1).unsqueeze(2)
-        return new_pcl_clean.float32()
-
     def get_supervised_loss(self, pcl_noisy, pcl_clean, pcl_seeds, pcl_std):
         """
         Args:
@@ -161,37 +128,6 @@ class DenoiseNetCD(nn.Module):
             print(f'pcl_denoised.shape ===> {pcl_denoised.shape}')
 
         return pcl_denoised
-
-    def patch_based_denoise_without_stitching(self, pcl_noisy, patch_size=1000,
-                                               seed_k=5, seed_k_alpha=10,
-                                               num_modules_to_use=None):
-        """
-        Simpler variant used by test_ASDN.py when --patch_stitching is off:
-        denoise patches and concatenate all their points, then FPS back to N.
-        """
-        assert pcl_noisy.ndim == 2
-        N, d = pcl_noisy.shape
-        pcl_noisy = pcl_noisy.unsqueeze(0)
-        num_patches = int(seed_k * N / patch_size)
-        seed_pnts, _ = farthest_point_sampling(pcl_noisy, num_patches)
-        _, _, patches = knn_points(seed_pnts, pcl_noisy, K=patch_size, return_nn=True)
-        patches = patches[0]
-        seed_pnts_1 = seed_pnts.squeeze(0).unsqueeze(1).repeat(1, patch_size, 1)
-        patches = patches - seed_pnts_1
-
-        patches_denoised = []
-        i = 0
-        patch_step = int(N / (seed_k_alpha * patch_size))
-        assert patch_step > 0, "Seed_k_alpha needs to be decreased to increase patch_step!"
-        while i < num_patches:
-            curr_patches = patches[i:i + patch_step]
-            patches_denoised.append(self.denoise_langevin_dynamics(curr_patches))
-            i += patch_step
-
-        patches_denoised = jt.concat(patches_denoised, dim=0) + seed_pnts_1
-        all_pts = patches_denoised.reshape(1, -1, 3)
-        sampled, _ = farthest_point_sampling(all_pts, N)
-        return sampled[0]
 
     def denoise_langevin_dynamics(self, pcl_noisy):
         """

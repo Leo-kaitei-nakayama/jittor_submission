@@ -9,9 +9,9 @@ make_eval_set.py (eval_meta.csv), so we can check whether this cheap,
 GT-free signal is good enough to drive a noise-adaptive --niters choice.
 
 Usage:
-    python estimate_noise.py \
+    python tools/estimate_noise.py \
         --noisy_dir ./eval_noisy --noisy_filename noisy.npy \
-        --meta_csv ./eval_meta.csv \
+        --meta_csv ./tools/results/eval_meta.csv \
         --k 30 --sample_points 5000
 """
 import argparse
@@ -56,7 +56,7 @@ def main():
     parser.add_argument('--k', type=int, default=30)
     parser.add_argument('--sample_points', type=int, default=5000,
                          help='subsample this many query points per cloud for speed (0 = use all)')
-    parser.add_argument('--out_csv', type=str, default='./noise_estimates.csv')
+    parser.add_argument('--out_csv', type=str, default='./tools/results/noise_estimates.csv')
     args = parser.parse_args()
 
     sample_points = None if args.sample_points == 0 else args.sample_points

@@ -16,7 +16,6 @@ Offset format recap (as used throughout blocks.py):
 """
 
 import jittor as jt
-import math
 
 
 def _offsets_to_bounds(o):

@@ -1,0 +1,22 @@
+# 第六届计图挑战赛 赛题二（点云降噪）—— 运行依赖
+#
+# 目标环境: Ubuntu 22.04 + NVIDIA RTX 4090 + CUDA 12.4 + Python 3.10
+# 安装:     pip install -r requirements.txt
+#
+# 本项目不依赖 PyTorch / PyTorch-Lightning / pytorch3d / torch_geometric /
+# torch_cluster，也不需要编译任何 CUDA 扩展（Chamfer3D、pointops 等均已用
+# 纯 Jittor 算子重写，见 code/models/pointops_jt.py 与 code/models/InfoCD.py）。
+
+# ---------- 训练 / 推理必需 ----------
+jittor>=1.3.10,<1.4          # A 榜结果实际使用 1.3.11.0；赛方要求 >=1.3.10
+numpy>=1.21,<2.0             # Jittor 1.3.x 对 numpy 2.x 支持不完整，锁定 1.x
+scipy>=1.7,<2.0              # scipy.spatial.cKDTree：训练取 patch、噪声估计
+trimesh>=3.20,<5.0           # 读取 ShapeNet .obj 并在表面均匀采样点云
+tqdm>=4.60,<5.0              # 训练/推理进度条
+
+# ---------- 本地评测与结果分析（不参与 A 榜结果生成） ----------
+pandas>=1.3,<3.0             # code/tools/analysis.py, estimate_noise.py
+point-cloud-utils>=0.29,<1.0 # code/tools/evaluate.py 的精确 P2S（BVH）；
+                             # 未安装时自动回退为网格顶点近似，评分会偏差
+matplotlib>=3.5,<4.0         # code/tools/plot_loss.py 绘制训练损失曲线
+plotly>=5.0,<7.0             # code/tools/visualize_errors.py 误差可视化

@@ -8,7 +8,7 @@ For each sample it shows 3 panels:
   3. Clean GT,          plain color (reference)
 
 Usage:
-    python visualize_errors.py \
+    python tools/visualize_errors.py \
         --keys 04379243/4afbcdeba648df2e19fb4103277a6b93,04468005/40fcd2ccc96b3fbd041917556492646 \
         --gt_dir ./eval_gt --noisy_dir ./eval_noisy --pred_dir ./eval_predict \
         --gt_filename clean.npy --noisy_filename noisy.npy --pred_filename denoised.npy \

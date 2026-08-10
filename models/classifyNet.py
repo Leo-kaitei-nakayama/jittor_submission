@@ -39,10 +39,6 @@ class ScaleNet(nn.Module):
             self.linear_proj = nn.Linear(256, self.z_dim)
             self.dropout_proj = nn.Dropout(0.1)
 
-    @property
-    def out_channels(self):
-        return self.convs[-1].out_channels
-
     def get_edge_index(self, x):
         """
         Returns (B, N, k) neighbor indices, self excluded.
