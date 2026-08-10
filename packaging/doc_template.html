@@ -104,7 +104,7 @@
   <tr><td class="k">A 榜排名</td><td>第 {{RANK_PLAIN}} 名</td>
       <td class="k">最优成绩提交日期</td><td>{{SUBMIT_DATE}}</td></tr>
   <tr><td class="k">A 榜最优总分</td><td class="hl">{{SCORE_TOTAL}}</td>
-      <td class="k">分项得分</td><td>CD {{SCORE_CD}} ／ P2S {{SCORE_P2S}}</td></tr>
+      <td class="k">分项得分</td><td>{{SCORE_BREAKDOWN}}</td></tr>
   <tr><td class="k">联系人</td><td>{{CONTACT_NAME}}</td>
       <td class="k">微信</td><td>{{CONTACT_WECHAT}}</td></tr>
   <tr><td class="k">电话</td><td>{{CONTACT_PHONE}}</td>
@@ -367,6 +367,14 @@ cd results/dataset_test_noisy && zip -r ../../result.zip shapenet/</code></pre>
   <tr><td><b>2</b></td><td><b>66.47</b></td><td><b>87.02</b></td><td><b>76.74</b></td><td><b>A 榜采用</b></td></tr>
   <tr><td>3</td><td>63.39</td><td>85.71</td><td>74.55</td><td>过度平滑，CD 明显回落</td></tr>
 </table>
+
+<div class="note">
+官方 A 榜只公布总分，<b>不公布 CD / P2S 分项</b>，因此本文档中出现的分项得分均来自上表的
+<b>本地验证集</b>，而非官方评测结果。该验证集上 niters=2 的总分为 <b>76.74</b>，
+与同一权重在 A 榜取得的 <b>{{SCORE_TOTAL}}</b> 相当接近，说明"从训练集自建带 GT 验证集 +
+复现官方评分公式"这一本地代理是可靠的：全部超参决策都据此做出，既没有消耗额外的提交次数，
+也没有接触测试集 GT。
+</div>
 
 <h3>5.5 本地评测（可选，不接触测试集 GT）</h3>
 <pre><code>python tools/make_eval_set.py --root ./dataset_train --datalist ./datalist/train.txt \

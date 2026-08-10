@@ -2,13 +2,14 @@
   "_comment": "填写队伍信息后运行: python packaging/build_submission.py。所有 TODO 项必须替换，否则脚本会报错退出。",
 
   "track": "2",
-  "team_name": "TODO_队伍名称",
-  "rank": "TODO_名次三位数字_例如001",
+  "team_name": "张三队",
+  "rank": "042",
 
-  "score_total": "TODO_A榜最优总分",
-  "score_cd": "TODO_A榜CD得分_没有可填 -",
-  "score_p2s": "TODO_A榜P2S得分_没有可填 -",
-  "submit_date": "TODO_A榜最优成绩提交日期_例如2026-07-30",
+  "_score_note": "A 榜榜单只公布总分，不公布 CD / P2S 分项。score_cd / score_p2s 保持 '-' 即可，文档会自动写明'官方榜单仅公布总分'并指向本地验证集的分项数据。",
+  "score_total": "78.07",
+  "score_cd": "-",
+  "score_p2s": "-",
+  "submit_date": "2026-07-30",
 
   "contact_name": "TODO_联系人姓名",
   "contact_wechat": "TODO_微信号",

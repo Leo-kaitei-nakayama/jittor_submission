@@ -125,14 +125,23 @@ def render_pdf(out_pdf, meta):
                  f"{meta['classify_ckpt']} 及训练日志 train_log.csv"
                  "（评委可跳过重训直接复现推理结果；从零训练路径见 5.2 节）")
 
+    # The A-board leaderboard only publishes the combined score, so CD/P2S are
+    # normally unavailable. Say so rather than printing a bare dash, which a
+    # reviewer could misread as an official zero.
+    cd, p2s = str(meta['score_cd']).strip(), str(meta['score_p2s']).strip()
+    if cd in ('', '-', '—', 'N/A') or p2s in ('', '-', '—', 'N/A'):
+        breakdown = ('官方榜单仅公布总分，未公布 CD / P2S 分项'
+                     '（本地验证集上的分项见 5.4 节）')
+    else:
+        breakdown = f'CD {cd} ／ P2S {p2s}'
+
     fields = {
         'TRACK': meta['track'],
         'TRACK_CN': TRACK_CN[meta['track']],
         'TEAM_NAME': meta['team_name'],
         'RANK_PLAIN': rank.lstrip('0') or '0',
         'SCORE_TOTAL': meta['score_total'],
-        'SCORE_CD': meta['score_cd'],
-        'SCORE_P2S': meta['score_p2s'],
+        'SCORE_BREAKDOWN': breakdown,
         'SUBMIT_DATE': meta['submit_date'],
         'CONTACT_NAME': meta['contact_name'],
         'CONTACT_WECHAT': meta['contact_wechat'],
